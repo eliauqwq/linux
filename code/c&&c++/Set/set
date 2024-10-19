@@ -1,0 +1,166 @@
+>>>>>>>>STL之“set”
+    set是基于搜索二叉树的一种模板，其功能简单概括来说就是“排序+除重”，对于给定的一组数据，其接口函数在插入的同时能
+根据搜索二叉树的结构进行除重这一功能，而其部分接口函数如寻找特定元素以及其迭代器都能实现排序（搜索二叉树中根遍历）和快速寻找的功能。
+
+1.接口“插入”insert：将模板K插入set中并及时除重
+
+#void test_set1()
+{
+    set<int> s;
+    s.insert(5);
+    s.insert(3);
+    s.insert(4);
+    s.insert(2);
+    s.insert(1);
+    s.insert(6);
+
+    //"排序+除重"
+    set<int>:: iterator it=s.begin();
+    while(it!=s.end())
+    {
+        cout<<*it<<' ';
+        ++it;
+    }
+}
+
+2.从上面的例子就能知道set类是支持迭代器的，因此，set类也能够支持使用范围for
+#void test_set2()
+{
+    set<int> s;
+    s.insert(5);
+    s.insert(3);
+    s.insert(4);
+    s.insert(2);
+    s.insert(1);
+    s.insert(6);
+
+    for(auto e:s)
+    {
+        cout<<e<<' ';
+    }
+}
+
+3.find接口，判断给定值在set中的位置。如果能找到则直接返回迭代器，找不到则返回end();
+# iterator find( const Value_type& val) const;
+# void test_set3()
+{
+    set<int> s;
+    s.insert(5);
+    s.insert(3);
+    s.insert(4);
+    s.insert(2);
+    s.insert(1);
+    s.insert(6);
+
+    set<int> iterator pos1=s.find(3);
+    set<int> iterator pos2=s.find(7);
+    if(pos1!=s.end())
+    {
+        cout<< "找到了！"<<endl;
+    }
+    if(pos2!=s.end())
+    {
+        cout << "找到了" <<endl;
+    }
+}
+
+4.count接口，直接判断给定元素是否在set中，在返回1，不在返回0。
+#void test_set4()
+{
+    set<int> s;
+    s.insert(5);
+    s.insert(3);
+    s.insert(4);
+    s.insert(2);
+    s.insert(1);
+    s.insert(6);
+
+    if(s.count(3))
+    {
+        cout<<"3在"<<endl;
+    }
+    if(s.count(7))
+    {
+        cout<<"7在"<<endl;
+    }
+}
+
+5.删除接口erase
+erase接口有三种重载，分别是
+void erase(iterator pos);//删除某个位置的值，不能是end()
+size_type erase(const Value_type& val);//删除某个特定的值，没有则不会警告
+void erase(iterator first,iterator last);//删除某个特定区间的值
+
+第一种重载可以和find()配合使用，不过较第二种重载较为麻烦，这里只展示第二种重载的演示。第三种重载和lower_bound、upper_bound一起使用
+#void test_set5()
+{
+    set<int> s;
+    s.insert(5);
+    s.insert(3);
+    s.insert(4);
+    s.insert(2);
+    s.insert(1);
+    s.insert(6);
+
+
+    for(auto e:s)
+    {
+        cout<<e<<' ';
+    }
+    cout<<endl;
+
+    s.erase(3);
+    s.erase(7);
+
+    
+    for(auto e:s)
+    {
+        cout<<e<<' ';
+    }
+
+}
+
+6.lower_bound和upper_bound
+
+#lower_bound
+#iterator lower_bound(const Key_type* key) const;
+不难看出，lower_bound的参数是模板K，实际上，它的作用是找到不小于给定值的第一个元素的迭代器，即[x,+)的下界
+
+#upper_bound
+##iterator upper_bound(const Key_type* key) const;
+同样的，upper_bound的作用是找到大于某个给定值的第一个元素的迭代器，即(x,+)
+
+根据他们的特点，和erase的第三种重载配合在一起就能轻松删除某一区间的值
+#void test_set6()
+{
+    set<int> s;
+    s.insert(5);
+    s.insert(3);
+    s.insert(4);
+    s.insert(2);
+    s.insert(1);
+    s.insert(6);
+
+    for(auto e:s)
+    {
+        cout<<e<<' ';
+    }
+    cout<<endl;
+
+    set<int>:: iterator left=s.lower_bound(3);
+    set<int>:: iterator right=s.upper_bound(3);
+
+    for(auto e:s)
+    {
+        cout<<e<<' ';
+    }
+    cout<<endl;
+
+
+}
+
+7.允许出现重复元素的multiset
+我们知道set是基于搜索二叉树的，因此其不会插入相同的元素，而multiset则允许重复元素的插入，且可以进行排序。
+
+
+

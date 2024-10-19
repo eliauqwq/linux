@@ -1,0 +1,168 @@
+>>>>>>>>Huffman树
+    Huffman树是Huffman编码的底层数据结构。HUffman编码是一种贪心算法，它的主要思想就是根据字符出现的频率
+来判断其对应Huffman编码的长度，相对应的在Huffman树中，叶子代表结点，路径越长说明其出现的频率越短。
+
+一、Huffman树的结点
+对于Huffman树的节点，我们需要包括左子树的根，右子树的根，以及该节点的数据，和频率。
+#struct huffmanNode
+{
+    char data ;//结点所存储的字符
+    int frep ;//字符出现的频率
+
+    struct huffmanNode* left ;//左子树结点
+    struct huffmanNode* right;//右子树结点
+
+    huffmanNode(char _data , int _frep )//叶子结点的创建
+        : data(_data),frep(_frep)
+        {
+            this->left=nullptr;
+            this->right=nullptr;
+        }
+
+
+    huffmanNode(char _data,int _frep,huffmanNode* _left,huffmanNode* _right)//内部结点的创建
+        :data(_data),
+         frep(_frep),
+         left(_left),
+         right(_right){}
+}
+
+二、构建优先队列
+我们需要统计给定字符串中每个字符出现的频率，并借助优先队列(priority_queue)来将字符结点进行排序，将频率出现较小的
+两个字符结点优先出队，将他们的频率相加生成一个新结点之后再此入队，直到队列里只剩一个节点的时候，这个结点就是我们要的
+huffman树的根节点。
+但是我们之前没有了解过priority_queue的知识，借此机会可以了解一下
+1.优先队列(priority_queue)
+在C++的标准模板库（STL）中，std::priority_queue 是一个容器适配器，它封装了 heap(堆)的功能。在默认情况下，std::priority_queue 实现的是最大堆，即优先取出最大值。但我们在哈夫曼树中需要的是最小堆(即频率越小优先级越高)，所以需要对优先队列的比较方式进行修改。
+
+我们先来看看最优队列的传参
+#template<
+#    class T,                        // 队列中元素的类型
+ #   class Container = std::vector<T>,// 底层容器类型（默认为std::vector）
+#    class Compare = std::less<typename Container::value_type> // 比较器
+#> class priority_queue;
+T,就是我们要入队的数据类型
+container,就是最优队列所使用的底层容器，默认是vector
+Compare就有点复杂了，简单来说它是一个比较器，决定了数据出队时的优先级，如果我们不指定的话，默认最大的优先级最高
+
+我们刚才已经说了，我们需要频率最小最先出队，因此需要我们自定义比较器
+strcut Compare
+{
+    bool operator()(huffmanNode* first,huffmanNode* second)
+    {
+        return first->frep > second->frep ;//最小堆则1>2,最大堆则1<2
+    }
+};
+
+
+2.有了上面的基础，我们现在开始先做好准备工作。首先，我们利用unordered_map类快速记录每个字符出现的频率
+#/*定义一个map，表示每个字符对应出现的频率*/
+    unordered_map<char,int> frep;
+    for(char ch : text)
+    {
+        frep[ch]++;//利用map的[]重载，快速插入frep类型
+    }
+
+然后将frep中的数据，先存储到优先队列中去
+#/*定义优先队列*/
+    priority_queue<huffmanNode*,vector<huffmanNode*>,Compare> qp;
+    for(auto pair : frep)
+    {
+        qp.push(new huffmanNode(pair.first,pair.second));
+    }
+ 
+
+3.将队列中的前两个huffman结点中的频率加在一起，生成一个新的huffman结点加入队列中去，这个结点会作为两个出队结点的父节点，其中的char类型我们不需要它储存任何东西，仅仅在huffman树中担任结构功能，且方便我们后续生成huffman编码。我们利用递归不断重复去除最小两个结点的操作，直到队列中只剩最后一个结点，这个结点就是huffman树的根结点
+
+#/*构建huffman树本体*/
+    while(qp.size()!=1)//当队列中只剩一个结点，这个结点就是最终生成huffman树的根
+    {
+        /*去除最小频率结点1*/
+        huffmanNode* left=qp.top();
+        qp.pop();
+        /*去除最小频率结点2*/
+        huffmanNode* right=qp.top();
+        qp.pop();
+
+        /*将合成的新结点添加到huffman树中去*/
+        int sum=left->frep + right->frep ;
+        qp.push(new huffmanNode('\0',sum,left,right));//注意这个新结点只做结构作用，本身无意义
+    }
+
+    huffmanNode* root=qp.top();
+
+三、生成huffman编码的原理
+1.为了更加直观地了解huffman编码的生成，我们最好还是举一个例子，来观察生成好的huffman树的结构
+例如，我们现在给定一个字符串
+#ABRACADABRA
+
+经过统计，我们得到他们对应出现的频率
+#A(5), B(2), R(2), C(1), D(1)
+
+经过最优队列的排序过后，我们得到的huffman树是这样的
+          (11)
+         /    \
+      A(5)    (6)
+             /   \
+          (2)    (4)
+         /  \    /  \
+      C(1) D(1) B(2) R(2)
+
+2.我们现在规定，从根开始，直到每一个存有字符的叶子节点，有一个左子结点我们就给这个字符的huffman编码中加入‘0’，同样的
+，每有一个右子结点就加入一个‘1’。最终我们得到一个对应的编码表
+# A  0
+# C  100
+# D  101
+# B  110
+# R  111
+
+3.我们获得了对应的huffman编码，现在对源字符串进行压缩，最终得到结果
+#0 110 111 0 100 0 101 0 110 111 0
+
+四、经过上面原理的解析，现在我们开始付诸实践！
+1.生成每个字符对应的huffman编码。
+这一部分我们利用递归实现。首先我们确定递归返回的条件：只要输入的目标huffman树的根结点为空就直接返回
+其次我们判断这个结点是否为存储字符的叶子节点，是的话我们就将记录下来的str赋值给对应map中的string。
+同时让左子树和右子树递归，即可获得有效字符对应的huffman编码
+#/*生成对应的huffman编码*/
+/*
+参数一；目标huffman树的根
+参数二：目标huffman树已经记录下的编码
+参数三：最终我们得到的字符与编码的对应关系map
+*/
+void PrinthuffmanCode(huffmanNode* root,string str, unordered_map<char,string>& huffmanCode)
+{
+    /*注意递归终点，传入根节点是空时返回*/
+    if(root == nullptr)
+    {
+        return ;
+    }
+
+    /*判断是不是含有字符的叶子节点*/
+    if(root->left == NULL&&root->right == NULL)
+    {
+        huffmanCode[root->data] = str;//传入已经记录好的值
+    }
+
+    /*递归给子节点*/
+    PrinthuffmanCode(root->left,"0",huffmanCode);//走过左子树则记录‘0’
+    PrinthuffmanCode(root->right,"1",huffmanCode);//走过右子树则记录‘1’
+}
+
+unordered_map<char,string> huffmanCode;
+PrinthuffmanCode(root,"",huffmanCode);
+
+2.在总函数中输出对应的编码，以便观众看得明白
+#    cout << "编码对应:" << ednl;
+    for(auto pair : huffmanCode)
+    {
+        cout << pair.first << ':' << pair.second <<endl;
+    }
+
+3.输出最终结果
+#  cout << "最终结果" << endl;
+    string result;
+    for(char ch : text)
+    {
+        result += huffmanCode[ch];
+    }
