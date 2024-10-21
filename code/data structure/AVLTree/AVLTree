@@ -1,0 +1,292 @@
+>>>>>>>>数据结构之AVL树
+    我们之前已经知道了搜索二叉树这种数据结构，其特点就是左子树永远小于根，右子树永远大于根。可是存在一种特殊情况
+那就是当我们的样本本身具有很好的顺序性，我们利用搜索二叉树整个插入之后搜索二叉树会变得十分畸形，退化为单支树。在
+这种情况下，我们搜寻数据的效率和顺序表就基本一致了，这样搜索二叉树也就失去了它的意义。为了避免这种情况，我们对其进行
+改良，让它能够在插入的过程中保持平衡，也就是保持左右子树的高度相差不会太大，这样我们搜索数据时效率就会大大提高。
+
+一、AVL的平衡因子
+我们要想使AVL尽量保持平衡，需要引入一个新的定义——平衡因子。我们让树结点中包含这个因子，并在插入删除之后以该因子
+作为评判标准，判断需要怎样的纠正手段。
+以下是一个结点平衡因子的计算方式
+#平衡因子=左子树高度-右子树高度
+一个结点的平衡因子只能是-1、0或1，如果平衡因子出问题，则需要调整
+
+
+二、AVL的旋转操作
+当我们对AVL树进行删除或者插入操作的时候，其结构有可能会遭到破坏，出现失衡(左右子树高度不平衡)的情况，这时我们利用
+以下三种操作来纠正这种失衡
+#1.右旋转
+#2.左旋转
+#3.双向旋转
+不同的旋转对应不同的失衡情况，我们来详细了解
+
+1.左-左失衡，右旋转解决
+例如按30-20-10的顺序插入，当插入到10时，30也就是根节点的平衡因子为2，左子树太高，新结点插在左子树上
+我们对其进行如下操作
+#        30               20
+       /                  / \
+      20     ==>         10 30
+     /
+    10
+
+2.右-右失衡，左旋转解决
+按10-20-30插入，右子树过高，新结点插在右子树上
+        10                 20
+         \                / \
+          20     ==>     10 30
+           \
+            30
+
+3.左-右失衡
+按30-10-20插入，左子树太高，新结点插在右子树上
+  30
+ /
+10
+  \
+  20
+先对左子树左旋，然后再对整个树右旋
+
+4.右-左失衡，右子树太高，新结点插在左子树上
+    10
+      \
+      20
+      /
+     30 
+同样的，先对右子树右旋，然后再对整个树左旋
+
+三、代码实现
+1.定义AVL结点
+本来AVL一般存储的数据是pair(关联)的，这里为了简洁一点，我们只存储一个int类型。
+#include <iostream>
+using namespace std;
+
+struct AVLTreeNode
+{
+    AVLTreeNode* left ; //左子结点指针
+    AVLTreeNode* right ; //右子节点指针
+    int key ;//储存数据
+    int height;
+
+    //构造函数
+    AVLTreeNode(int K)
+    :left(nullptr),
+     right(nullptr),
+     height(1),
+     key(K){}
+};
+
+2.高度和平衡因子
+#//获得某点高度
+int height(AVLTreeNode* root)
+{
+    return root? root->height : 0 ;
+}
+
+//获得某点平衡因子
+int GetBlance(AVLTreeNode* root)
+{
+    return root? height(root->left) - height(root->right) : 0 ;//左子树高度减右子树高度
+}
+
+在这里，我们选择额外写一个可以更新结点高度的函数。将需要大量运算的递归分离出来。
+#//更新某点高度，利用递归思想
+int updateheight(AVLTreeNode* root)
+{
+    return 1 + max(height(root->left),height(root->right));
+}
+为什么我们不将其与取高度函数结合在一起呢？这是因为height函数是一个取常量函数，我们会很频繁的用到它。
+将更新高度函数与之结合固然能够减少调用函数时的麻烦，但是每次调用结合后的函数都会重复递归更新高度函数，
+这对于数据量较大的项目来说是致命的。因此需要将它们分开写
+
+3.右旋操作
+在刚刚的图示中，我们并没有考虑这样一种情况，如图
+        30
+        /
+      20
+      /\
+    10 15
+是的，新加入的结点10还有一个兄弟怎么办？
+我们可以考虑像搜索二叉树删除时那样，进行“领养”操作
+#AVLTreeNode* rightRotate(AVLTreeNode* root)
+{
+    AVLTreeNode* son=root->left;//根节点左子结点(20)
+    AVLTreeNode* son_r=son->right;//根节点左子结点的右子树(15)
+
+    son->right=root;//旋转
+    root->left=son_r;//领养
+
+    //准备更新高度
+    root->height = updateheight(root);
+    son->height = updateheight(son);
+
+    //返回新的根节点
+    return son;
+}
+
+4.左旋操作
+跟右旋操作差不多
+
+
+5.在前面的铺垫工作讲完了之后，我们开始正式实现插入操作
+#AVLTreeNode* insert(AVLTreeNode* root,int key)
+{
+    //1.和搜索二叉树一样，正常插入
+    if(!root)
+    {
+        return new AVLTreeNode(key);
+    }
+
+    if(key < root->key)
+    {
+        root->left = insert(root->left,key);
+    }else if(key > root->key)
+    {
+        root->right = insert(root->right,key);
+    }
+    else
+    {
+        return root;//不允许插入重复值
+    }
+
+    //2.更新新树结点的高度
+    root->height = updateheight(root);
+
+    //3.求新树结点的平衡因子
+    int balance = GetBlance(root);
+
+    //4.判断有没有失衡出现
+
+    //左-左失衡，右旋转
+    if(balance > 1&& key <root->left->key)
+    {
+        return rightRotate(root);
+    }
+
+    //右右失误，左旋转
+    if(balance < -1&& key > root->right->key)
+    {
+        return leftRotate(root);
+    }
+
+    //左-右失衡
+    if(balance > 1&& key > root->left->key )
+    {
+        //先左旋转
+        root->left = leftRotate(root->left);
+
+        return rightRotate(root);
+    }
+
+    //右-左失衡
+    if(balance < -1&& key < root->right->key)
+    {
+        root->right = rightRotate(root->right);
+
+        return leftRotate(root);
+    }
+
+    return root;//没失衡则正常返回
+}
+
+6.删除结点
+//找到最小的结点
+AVLTreeNode* MinNode( AVLTreeNode* root)
+{
+    AVLTreeNode* node=root;
+    while(node->left!=nullptr)
+    {
+        node = node->left;
+    }
+    return node;
+}
+
+//AVL删除操作
+AVLTreeNode* Pop(AVLTreeNode* root,int key)
+{
+    if(root==NULL)
+        return root;
+
+    //1.正常删除
+    if(key < root->key)
+        root->left = Pop(root->left ,key);
+    else if(key > root->key)
+        root->right = Pop(root->right,key);
+    else if( key == root-> key)
+    {
+        if(!root->left || !root->right)//只有一个子结点或者没有子节点
+        {
+            AVLTreeNode* temp = root->left ? root->left : root->right;
+            if(!temp)
+            {
+                temp=root;
+                root=nullptr;
+            }
+            else
+            {
+                root->key=temp->key;
+                root->left=temp->left;
+                root->right=temp->right;
+            }
+            delete temp;
+        }
+        else
+        {
+            AVLTreeNode* temp = MinNode(root->right);
+            root->key=temp->key;
+            root->right=Pop(root->right,temp->key);
+        }
+    }
+
+    if(!root)
+        return root;
+
+    //2.更新新树结点的高度
+    root->height = updateheight(root);
+
+    //3.求新树结点的平衡因子
+    int balance = GetBlance(root);
+
+    //4.判断有没有失衡出现
+
+    //左-左失衡，右旋转
+    if(balance > 1&& key < root->left->key)
+    {
+        return rightRotate(root);
+    }
+
+    //右右失误，左旋转
+    if(balance < -1&& key > root->right->key)
+    {
+        return leftRotate(root);
+    }
+
+    //左-右失衡
+    if(balance > 1&& key > root->left->key )
+    {
+        //先左旋转
+        root->left = leftRotate(root->left);
+
+        return rightRotate(root);
+    }
+
+    //右-左失衡
+    if(balance < -1&& key < root->right->key)
+    {
+        root->right = rightRotate(root->right);
+
+        return leftRotate(root);
+    }
+
+    return root;//没失衡则正常返回
+}
+
+四、总结
+不同于之前的搜索二叉树的删除和插入的代码实现，这次我们采用了递归的方式进行实现。可以发现在递归情形下确实
+代码实现变得更为简单，但同时效率也会受到一定的影响，也算是有利有弊。
+事实上AVL树是在搜索二叉树的基础上增添了判断失衡并旋转的操作，固然能使效率大大提高，但同时也增加了代码数量。
+
+
+
+
+
+
