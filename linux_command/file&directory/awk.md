@@ -69,9 +69,10 @@ awk '{print $0} END {print $0}' file
 
 **7. 收取外部变量**
 ```
-awk -v standard = $find '$2 > standard {print $0}' file
+awk -v standard=$find '$2 > standard {print $0}' file
 ```
 从awk脚本外截取find变量的值给awk，再根据条件判断输出的行。
+***standard已经作为awk变量传入awk了，因此在 '...'内再使用不需要取值符'$'。***
 
 **8. 正则表达式**
 ```
