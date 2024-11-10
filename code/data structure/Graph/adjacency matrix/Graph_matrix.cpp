@@ -2,6 +2,7 @@
 #include <map>
 #include <vector>
 #include <queue>
+#include <climits>
 
 using namespace std;
 
@@ -21,7 +22,7 @@ public:
             tag.insert(pair<size_t,int>(index++,arr[i]));
         }
         int n = vertex.size();
-        matrix.resize(n,vector<int>(n,0));
+        matrix.resize(n,vector<int>(n,INT_MAX));
         
     }
 
@@ -126,6 +127,60 @@ public:
             }
         }
     }
+
+    /*Dijkstra算法*/
+    void Dijkstra(size_t start)
+    {
+        /*首先初始化距离容器*/
+        vector<int> dist(Getsize(),INT_MAX);
+        dist[start] = 0;//与自己的距离化为0
+
+        vector<size_t> visited(Getsize(),false);//初始化访问状态数组
+
+        /*引入最优队列，并转化为最小堆*/
+        priority_queue<pair<int,size_t>,vector<pair<int,size_t>>,greater<pair<int,size_t>>> pq;
+
+        /*插入自身*/
+        pq.push({dist[start],0});
+
+
+        while(!pq.empty())
+        {
+            /*找到最小距离点*/
+            int mindist = pq.top().first;
+            int u = pq.top().second;
+            pq.pop();
+
+
+            /*判断到该点的最小距离是否已经找到*/
+            if(visited[u]) continue;
+            visited[u] = true;
+
+            for(size_t v = 0;v < Getsize();v++)
+            {
+                if(matrix[u][v] != INT_MAX&&!visited[v])
+                {
+                    if(mindist + matrix[u][v] < dist[v])
+                    {
+                        dist[v] = mindist + matrix[u][v];
+                        pq.push({dist[v],v});
+                    }
+                }
+            }
+        }
+
+        for(size_t i=0;i<Getsize();i++)
+        {
+            if(dist[i] != INT_MAX)
+            {
+                cout<<"到"<<i<<"点的距离是"<<dist[i]<<endl;
+            }
+            else
+            {
+                cout<<"与"<<i<<"点并不联通"<<endl;
+            }
+        }
+    }
 };
 
 int main()
@@ -134,10 +189,13 @@ int main()
     int arrsize = sizeof(arr)/sizeof(arr[0]);
     Graph ass(arr,arrsize);
 
-    ass.addEdge(2,5);
-    ass.addEdge(2,6);
-    ass.addEdge(8,9);
-    ass.addEdge(8,1);
+    ass.addEdge(2,5,4);
+    ass.addEdge(2,6,2);
+    ass.addEdge(8,9,1);
+    ass.addEdge(8,1,2);
+    ass.addEdge(2,8,10);
+    ass.addEdge(2,9,11);
+    ass.addEdge(2,1,1);
 
-    ass.BFS();
+    ass.Dijkstra(0);
 }
