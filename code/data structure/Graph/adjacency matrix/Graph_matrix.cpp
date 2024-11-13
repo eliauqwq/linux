@@ -38,13 +38,21 @@ public:
         exit(-1);
     }
 
-    void addEdge(int value1,int value2,int weight = 1)//添加边,默认无权，如果有权则输入
+    void addEdge(int value1,int value2,int weight = 1)//添加无向边,默认无权，如果有权则输入
     {
         size_t tag1 = Gettag(value1);
         size_t tag2 = Gettag(value2);
 
         matrix[tag1][tag2] = weight;
         matrix[tag2][tag1] = weight;
+    }
+
+    void addDEdge(int value1,int value2,int weight = 1)//添加有向边
+    {
+        size_t tag1 = Gettag(value1);
+        size_t tag2 = Gettag(value2);
+
+        matrix[tag1][tag2] = weight;
     }
 
     int Getsize()
@@ -181,6 +189,102 @@ public:
             }
         }
     }
+
+    /*Bellman-Ford算法*/
+    bool relaxation(size_t start,vector<int> &dist)
+    {
+        /*初始化距离数组*/
+        dist.resize(vertex.size(),INT_MAX);
+        dist[start] = 0;
+
+        /*遍历V-1次*/
+        for(int i=0;i<vertex.size()-1;i++)
+        {
+            for(int j=0;j<vertex.size();j++)
+            {
+                for(int k=0;k<vertex.size();k++)
+                {
+                    if(dist[j] != INT_MAX&&dist[k]>dist[j]+matrix[j][k]&&matrix[j][k]!=INT_MAX)
+                        dist[k] = dist[j] + matrix[j][k];
+                }
+            }
+        }
+        /*遍历第V次*/
+        for(int i=0;i<vertex.size();i++)
+        {
+            for(int j = 0;j<vertex.size();j++)
+            {
+                if(dist[i]!=INT_MAX&&dist[j]>dist[i]+matrix[i][j]&&matrix[i][j]!=INT_MAX)
+                    return false;//存在负权环
+            }
+        }
+
+        return true;
+    }
+
+    void BellmanFord(size_t start)
+    {
+        vector<int> dist;
+        if(relaxation(start,dist))
+        {
+            for(int i=0;i<vertex.size();i++)
+            {
+                if(dist[i]!=INT_MAX)
+                {
+                    cout<<"到"<<i<<"点的最短距离是"<<dist[i]<<endl;
+                }
+                else
+                {
+                    cout<<"与"<<i<<"点并不相连"<<endl;
+                }
+            }
+        }
+        else
+        {
+            cout<<"图中存在负权环"<<endl;
+        }
+    }
+
+    /*Floyd-Warshall算法*/
+    void Floyd(size_t start)
+    {
+        /*直接拷贝邻接矩阵初始化距离数组*/
+        vector<vector<int>> dist = matrix;
+        for(int i=0;i<vertex.size();i++)
+        {
+            for(int j = 0;j<vertex.size();j++)
+            {
+                if(i == j)
+                    dist[i][j] = 0;//别忘了把到自身的距离初始化为零
+            }
+        }
+
+        /*三层遍历*/
+        for(int i = 0;i<vertex.size();i++)
+        {
+            for(int u = 0;u<vertex.size();u++)
+            {
+                for(int v = 0;v<vertex.size();v++)
+                {
+                    if(dist[u][i] != INT_MAX&&dist[i][v]!= INT_MAX&&dist[u][v]>dist[u][i]+dist[i][v])
+                        dist[u][v] = dist[u][i]+dist[i][v];
+                }
+            }
+        }
+
+        /*输出*/
+        for(int i = 0;i<vertex.size();i++)
+        {
+            if(dist[start][i] != INT_MAX)
+            {
+                cout<<"到"<<i<<"点的最短距离是"<<dist[start][i]<<endl;
+            }
+            else
+            {
+                cout<<"没有到"<<i<<"点的最短距离"<<endl;
+            }
+        }
+    }
 };
 
 int main()
@@ -189,13 +293,12 @@ int main()
     int arrsize = sizeof(arr)/sizeof(arr[0]);
     Graph ass(arr,arrsize);
 
-    ass.addEdge(2,5,4);
-    ass.addEdge(2,6,2);
-    ass.addEdge(8,9,1);
-    ass.addEdge(8,1,2);
-    ass.addEdge(2,8,10);
-    ass.addEdge(2,9,11);
-    ass.addEdge(2,1,1);
+    ass.addDEdge(1,5,1);
+    ass.addDEdge(1,2,2);
+    ass.addDEdge(5,2,-4);
+    ass.addDEdge(1,9,5);
+    ass.addDEdge(9,8,-1);
+    ass.addDEdge(8,6,-2);
 
-    ass.Dijkstra(0);
+    ass.Floyd(5);
 }
